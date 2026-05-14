@@ -5,36 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>카카오맵 검색 서비스</title>
     <style>
-        /* 레이아웃 설정 */
+        /* 화면 구성 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { display: flex; height: 100vh; font-family: sans-serif; }
+        body { display: flex; height: 100vh; font-family: 'Malgun Gothic', sans-serif; }
 
-        /* 왼쪽 사이드바: 검색창 및 결과 리스트 */
+        /* 왼쪽: 검색창 및 리스트 */
         #sidebar {
             width: 350px; height: 100%; padding: 20px;
-            background-color: #f9f9f9; border-right: 1px solid #ddd;
+            background-color: #fff; border-right: 1px solid #ddd;
             display: flex; flex-direction: column; z-index: 10;
         }
-
-        .search-container { display: flex; gap: 5px; margin-bottom: 20px; }
+        .search-box { display: flex; gap: 5px; margin-bottom: 20px; }
         #keyword { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
         #search-btn { padding: 10px; background: #fae100; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; }
 
         #placesList { flex: 1; overflow-y: auto; list-style: none; }
-        .place-item { padding: 15px; border-bottom: 1px solid #eee; background: white; margin-bottom: 5px; cursor: pointer; }
-        .place-item h5 { margin-bottom: 5px; color: #333; }
+        .place-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .place-item:hover { background-color: #f9f9f9; }
+        .place-item h5 { margin-bottom: 5px; color: #333; font-size: 15px; }
         .place-item p { font-size: 12px; color: #777; }
 
-        /* 오른쪽 지도 영역 */
-        #map { flex: 1; height: 100%; background-color: #eee; }
+        /* 오른쪽: 지도 */
+        #map { flex: 1; height: 100%; background-color: #f0f0f0; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <h2>장소 검색</h2>
-    <div class="search-container">
-        <input type="text" id="keyword" placeholder="검색어를 입력하세요" onkeypress="if(event.keyCode==13) searchPlaces()">
+    <h2>📍 장소 검색</h2>
+    <div class="search-box">
+        <input type="text" id="keyword" placeholder="장소를 입력하세요" onkeypress="if(event.keyCode==13) searchPlaces()">
         <button id="search-btn" onclick="searchPlaces()">검색</button>
     </div>
     <ul id="placesList"></ul>
@@ -42,27 +42,25 @@
 
 <div id="map"></div>
 
-<script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=76fdac83397fb48814297d9412f5f886&libraries=services&autoload=false"></script>
+<script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ff73be907fce66d6d1cd36a39a64110&libraries=services&autoload=false"></script>
 
 <script>
     let map;
     let placeService;
-    let markers = []; // 생성된 마커를 관리할 배열
+    let markers = []; // 마커 관리 배열
 
-    // 1. 카카오맵 SDK 로드 후 실행
+    // 1. 스크립트 로드 후 지도 초기화
     kakao.maps.load(function() {
         const mapContainer = document.getElementById('map');
         const mapOption = {
-            center: new kakao.maps.LatLng(37.566826, 126.9786567), // 기본 중심 좌표
-            level: 5 // 확대 레벨
+            center: new kakao.maps.LatLng(37.5668, 126.9786), // 기본값: 서울시청
+            level: 5
         };
 
-        // 지도 객체 생성
         map = new kakao.maps.Map(mapContainer, mapOption);
-        // 장소 검색 객체 생성
         placeService = new kakao.maps.services.Places();
 
-        // 2. 현재 위치 가져오기 (위치 권한 요청)
+        // 2. 현재 위치 가져오기 시도
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function(position) {
                 const lat = position.coords.latitude;
@@ -70,96 +68,15 @@
                 const currentPos = new kakao.maps.LatLng(lat, lon);
                 
                 map.setCenter(currentPos);
-                addMarker(currentPos, "현재 위치"); // 손가락 모양 마커 표시
+                addMarker(currentPos, "내 위치"); // 첫 로드 시 내 위치에 손가락 마커
             }, function(err) {
-                console.warn("위치 권한이 거부되었습니다.");
+                console.error("위치 권한을 획득하지 못했습니다.");
             });
         }
     });
 
     // 3. 마커 추가 함수 (손가락 모양 마커 이미지 적용)
     function addMarker(position, title) {
-        // 손가락 모양 커스텀 이미지 (카카오 제공 이미지)
         const imageSrc = "https://t1.daumcdn.net/localimg/localimages/07/2011/img/marker_p.png";
         const imageSize = new kakao.maps.Size(40, 42);
-        const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize);
-
-        const marker = new kakao.maps.Marker({
-            position: position,
-            image: markerImage,
-            title: title
-        });
-
-        marker.setMap(map);
-        markers.push(marker); // 배열에 추가하여 나중에 한꺼번에 삭제 가능하게 함
-    }
-
-    // 4. 기존 마커 모두 삭제 함수
-    function removeMarkers() {
-        for (let i = 0; i < markers.length; i++) {
-            markers[i].setMap(null);
-        }
-        markers = [];
-    }
-
-    // 5. 장소 검색 함수
-    function searchPlaces() {
-        const keyword = document.getElementById('keyword').value;
-
-        if (!keyword.trim()) {
-            alert("검색어를 입력해 주세요!");
-            return;
-        }
-
-        // 카카오 검색 서비스 호출
-        placeService.keywordSearch(keyword, searchCallback);
-    }
-
-    // 6. 검색 결과 콜백 함수
-    function searchCallback(data, status) {
-        if (status === kakao.maps.services.Status.OK) {
-            displayResults(data);
-        } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
-            alert("검색 결과가 없습니다.");
-        } else {
-            alert("검색 중 오류가 발생했습니다.");
-        }
-    }
-
-    // 7. 검색 결과 표시 및 지도 범위 조절
-    function displayResults(places) {
-        const listEl = document.getElementById('placesList');
-        const bounds = new kakao.maps.LatLngBounds(); // 지도 범위를 재설정할 객체
-        
-        listEl.innerHTML = ""; // 기존 리스트 삭제
-        removeMarkers(); // 기존 마커 삭제
-
-        for (let i = 0; i < places.length; i++) {
-            const placePos = new kakao.maps.LatLng(places[i].y, places[i].x);
-            
-            // 마커 추가
-            addMarker(placePos, places[i].place_name);
-
-            // 리스트 아이템 생성
-            const itemEl = document.createElement('li');
-            itemEl.className = 'place-item';
-            itemEl.innerHTML = `<h5>${places[i].place_name}</h5><p>${places[i].address_name}</p>`;
-            
-            // 리스트 클릭 시 해당 위치로 부드럽게 이동
-            itemEl.onclick = function() {
-                map.panTo(placePos);
-            };
-
-            listEl.appendChild(itemEl);
-
-            // LatLngBounds에 좌표 정보 추가
-            bounds.extend(placePos);
-        }
-
-        // 8. 검색된 장소들이 모두 보이도록 지도 범위 자동 조절
-        map.setBounds(bounds);
-    }
-</script>
-
-</body>
-</html>
+        const markerImage = new kakao.maps.MarkerImage(image
