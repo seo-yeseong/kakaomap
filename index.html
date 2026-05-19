@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>카카오맵 디저트 & 맛집 가이드</title>
+    <title>카카오맵 장소 검색 서비스</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; font-family: 'Malgun Gothic', dotum, sans-serif; }
         .container { display: flex; width: 100%; height: 100%; }
         .sidebar { width: 350px; height: 100%; background-color: #f8f9fa; box-shadow: 2px 0 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; z-index: 10; }
         
-        /* 💡 상단 탭 메뉴 스타일 */
+        /* 💡 추가: 햄버거와 아이스크림을 전환할 상단 탭 스타일 */
         .tab-menu {
             display: flex;
             background-color: #e9ecef;
@@ -28,37 +28,193 @@
             transition: all 0.2s;
             text-align: center;
         }
-        /* 활성화된 탭 스타일 (기본은 햄버거 테마 색상) */
-        .tab-button.active {
+        /* 햄버거 탭 활성화 테마 스타일 */
+        .tab-button.active.burger-theme {
             background-color: #ffffff;
             color: #ff9f43;
             border-bottom: 3px solid #ff9f43;
         }
-        /* 아이스크림 탭이 활성화되었을 때의 특별 색상 포인트 */
+        /* 아이스크림 탭 활성화 테마 스타일 */
         .tab-button.active.icecream-theme {
+            background-color: #ffffff;
             color: #00d2d3;
             border-bottom: 3px solid #00d2d3;
         }
 
-        /* 검색창 영역 */
         .search-box { padding: 20px; background-color: #ffffff; border-bottom: 1px solid #e9ecef; }
-        .search-box h2 { font-size: 1.2rem; margin-bottom: 10px; color: #ff9f43; }
-        .search-box h2.icecream-theme { color: #00d2d3; } /* 아이스크림 모드일 때 타이틀 색상 변경 */
+        .search-box h2 { font-size: 1.2rem; margin-bottom: 10px; color: #ff9f43; transition: color 0.2s; }
+        .search-box h2.icecream-theme { color: #00d2d3; } /* 아이스크림 타이틀 컬러 */
         
         .search-form { display: flex; gap: 5px; }
         .search-input { flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; }
         
-        .search-button { padding: 10px 15px; background-color: #ff9f43; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
-        .search-button.icecream-theme { background-color: #00d2d3; }
-        
-        /* 결과 리스트 */
+        .search-button { padding: 10px 15px; background-color: #ff9f43; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
+        .search-button.icecream-theme { background-color: #00d2d3; } /* 아이스크림 버튼 컬러 */
+
         .places-list { flex: 1; overflow-y: auto; padding: 10px; list-style: none; }
-        .place-item { padding: 15px; background-color: #ffffff; margin-bottom: 10px; border-radius: 6px; border: 1px solid #e9ecef; cursor: pointer; transition: background 0.2s; }
+        .place-item { padding: 15px; background-color: #ffffff; margin-bottom: 10px; border-radius: 6px; border: 1px solid #e9ecef; cursor: pointer; }
         .place-item:hover { background-color: #fffaf0; }
         
         .place-name { font-weight: bold; color: #212529; margin-bottom: 5px; }
         .place-address { font-size: 13px; color: #6c757d; margin-bottom: 5px; }
         
-        /* 카테고리 태그 스타일 */
+        /* 💡 추가: 검색 결과 리스트에 표시될 세부 업종 태그 스타일 */
         .place-category { font-size: 11px; color: #ff9f43; background: #fff0e0; display: inline-block; padding: 2px 6px; border-radius: 10px; }
         .place-category.icecream-theme { color: #00d2d3; background: #e0f7f7; }
+
+        .map-container { flex: 1; height: 100%; background-color: #eee; } 
+
+        /* 💡 추가: 지도 위에 표시될 햄버거/아이스크림 이모지 마커 스타일 */
+        .emoji-marker {
+            font-size: 28px;
+            animation: bounce 0.3s ease-out;
+            cursor: pointer;
+        }
+        @keyframes bounce {
+            0% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="tab-menu">
+                <button id="tabBurger" class="tab-button active burger-theme" onclick="switchTab('burger')">🍔 햄버거 맛집</button>
+                <button id="tabIcecream" class="tab-button" onclick="switchTab('icecream')">🍦 아이스크림</button>
+            </div>
+
+            <div class="search-box">
+                <h2 id="searchTitle">🍔 우리동네 햄버거 맛집</h2>
+                <form class="search-form" onsubmit="searchPlaces(); return false;">
+                    <input type="text" id="keyword" class="search-input" placeholder="장소 검색" value="햄버거">
+                    <button type="submit" id="searchBtn" class="search-button">검색</button>
+                </form>
+            </div>
+            <ul id="placesList" class="places-list"></ul>
+        </div>
+        <div id="map" class="map-container"></div>
+    </div>
+
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7d9a277cfc4d368da119fb50f73b42c5&libraries=services&autoload=false"></script>
+    
+    <script>
+        let map; 
+        let placesService;
+        let markers = []; // 기존 일반 마커 배열 대신 커스텀 오버레이(이모지)를 관리할 배열
+        let infoWindow;
+        
+        // 💡 추가: 현재 선택된 맛집 모드 상태 변수 (기본값: burger)
+        let currentTab = 'burger'; 
+
+        kakao.maps.load(function() {
+            initMap();
+        });
+
+        function initMap() {
+            const mapContainer = document.getElementById('map');
+            const defaultPosition = new kakao.maps.LatLng(37.5559, 126.9723); // 서울역 위치
+            
+            const mapOptions = {
+                center: defaultPosition,
+                level: 5
+            };
+
+            map = new kakao.maps.Map(mapContainer, mapOptions);
+            placesService = new kakao.maps.services.Places();
+            infoWindow = new kakao.maps.InfoWindow({ zIndex: 1 });
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const currentPosition = new kakao.maps.LatLng(lat, lon);
+                    
+                    map.setCenter(currentPosition);
+                    new kakao.maps.Marker({ map: map, position: currentPosition });
+                    
+                    // 내 위치 로드가 성공하면 현재 설정된 탭(햄버거)으로 첫 검색 실행
+                    searchPlaces();
+                }, function(error) {
+                    console.log("위치 권한을 허용하지 않아 기본 위치로 표시합니다.");
+                    searchPlaces(); // 위치 로드 실패 시에도 기본 위치 기반 검색 실행
+                });
+            }
+        }
+
+        // 💡 추가: 탭 클릭 시 화면 스타일과 키워드를 바꾸고 재검색을 처리하는 함수
+        function switchTab(tabName) {
+            if (currentTab === tabName) return; // 이미 선택된 탭을 다시 누르면 아무것도 안 함
+            currentTab = tabName;
+
+            const tabBurger = document.getElementById('tabBurger');
+            const tabIcecream = document.getElementById('tabIcecream');
+            const searchTitle = document.getElementById('searchTitle');
+            const keywordInput = document.getElementById('keyword');
+            const searchBtn = document.getElementById('searchBtn');
+
+            // 탭 변경 시 기존 마커와 목록 결과 초기화
+            document.getElementById('placesList').innerHTML = '';
+            removeMarkers();
+
+            // 햄버거 탭 활성화 시 스타일 및 키워드 설정
+            if (currentTab === 'burger') {
+                tabBurger.className = 'tab-button active burger-theme';
+                tabIcecream.className = 'tab-button';
+                
+                searchTitle.className = '';
+                searchTitle.innerText = '🍔 우리동네 햄버거 맛집';
+                searchBtn.className = 'search-button';
+                keywordInput.value = '햄버거';
+            } 
+            // 아이스크림 탭 활성화 시 스타일 및 키워드 설정
+            else {
+                tabBurger.className = 'tab-button';
+                tabIcecream.className = 'tab-button active icecream-theme';
+                
+                searchTitle.className = 'icecream-theme';
+                searchTitle.innerText = '🍦 달콤한 아이스크림 맛집';
+                searchBtn.className = 'search-button icecream-theme';
+                keywordInput.value = '아이스크림';
+            }
+
+            // 탭이 바뀐 후 즉시 새 키워드로 장소 검색 실행
+            searchPlaces();
+        }
+
+        function searchPlaces() {
+            const keyword = document.getElementById('keyword').value;
+            if (!keyword.trim()) { alert('키워드를 입력해주세요!'); return; }
+            
+            // 사용자가 수동으로 검색어를 입력하고 검색했을 때를 위해 다시 한번 지워줌
+            document.getElementById('placesList').innerHTML = '';
+            removeMarkers();
+
+            placesService.keywordSearch(keyword, placesSearchCB);
+        }
+
+        function placesSearchCB(data, status) {
+            if (status === kakao.maps.services.Status.OK) { displayPlaces(data); } 
+            else if (status === kakao.maps.services.Status.ZERO_RESULT) { alert('검색 결과가 없습니다.'); }
+        }
+
+        function displayPlaces(places) {
+            const listEl = document.getElementById('placesList');
+            const bounds = new kakao.maps.LatLngBounds();
+
+            // 💡 추가: 현재 선택한 탭 모드에 맞는 마커 이모지 설정
+            const markerEmoji = (currentTab === 'burger') ? '🍔' : '🍦';
+
+            for (let i = 0; i < places.length; i++) {
+                const placePosition = new kakao.maps.LatLng(places[i].y, places[i].x);
+                
+                // 💡 변경: 기본 핀 마커 대신 이모지를 쓰기 위해 커스텀 오버레이(CustomOverlay) 엘리먼트 생성
+                const markerContent = document.createElement('div');
+                markerContent.className = 'emoji-marker';
+                markerContent.innerHTML = markerEmoji;
+
+                const customMarker = new kakao.maps.CustomOverlay({
+                    position: placePosition,
+                    content: markerContent,
+                    yAnchor:
