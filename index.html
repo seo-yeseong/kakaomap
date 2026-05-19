@@ -3,33 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>카카오맵 햄버거 맛집 서비스</title>
+    <title>카카오맵 디저트 & 맛집 가이드</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; font-family: 'Malgun Gothic', dotum, sans-serif; }
         .container { display: flex; width: 100%; height: 100%; }
         .sidebar { width: 350px; height: 100%; background-color: #f8f9fa; box-shadow: 2px 0 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; z-index: 10; }
         
-        /* 헤더 영역 디자인 변경 (햄버거 테마 느낌) */
+        /* 💡 상단 탭 메뉴 스타일 */
+        .tab-menu {
+            display: flex;
+            background-color: #e9ecef;
+            border-bottom: 1px solid #ced4da;
+        }
+        .tab-button {
+            flex: 1;
+            padding: 15px 0;
+            border: none;
+            background: none;
+            font-size: 14px;
+            font-weight: bold;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        /* 활성화된 탭 스타일 (기본은 햄버거 테마 색상) */
+        .tab-button.active {
+            background-color: #ffffff;
+            color: #ff9f43;
+            border-bottom: 3px solid #ff9f43;
+        }
+        /* 아이스크림 탭이 활성화되었을 때의 특별 색상 포인트 */
+        .tab-button.active.icecream-theme {
+            color: #00d2d3;
+            border-bottom: 3px solid #00d2d3;
+        }
+
+        /* 검색창 영역 */
         .search-box { padding: 20px; background-color: #ffffff; border-bottom: 1px solid #e9ecef; }
-        .search-box h2 { font-size: 1.2rem; margin-bottom: 10px; color: #ff9f43; } /* 주황색 포인트 */
+        .search-box h2 { font-size: 1.2rem; margin-bottom: 10px; color: #ff9f43; }
+        .search-box h2.icecream-theme { color: #00d2d3; } /* 아이스크림 모드일 때 타이틀 색상 변경 */
+        
         .search-form { display: flex; gap: 5px; }
         .search-input { flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; }
         
-        /* 버튼 색상을 햄버거 서비스에 맞게 변경 */
         .search-button { padding: 10px 15px; background-color: #ff9f43; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
-        .search-button:hover { background-color: #ee5253; }
-
+        .search-button.icecream-theme { background-color: #00d2d3; }
+        
+        /* 결과 리스트 */
         .places-list { flex: 1; overflow-y: auto; padding: 10px; list-style: none; }
         .place-item { padding: 15px; background-color: #ffffff; margin-bottom: 10px; border-radius: 6px; border: 1px solid #e9ecef; cursor: pointer; transition: background 0.2s; }
         .place-item:hover { background-color: #fffaf0; }
         
         .place-name { font-weight: bold; color: #212529; margin-bottom: 5px; }
         .place-address { font-size: 13px; color: #6c757d; margin-bottom: 5px; }
+        
+        /* 카테고리 태그 스타일 */
         .place-category { font-size: 11px; color: #ff9f43; background: #fff0e0; display: inline-block; padding: 2px 6px; border-radius: 10px; }
-        
-        .map-container { flex: 1; height: 100%; background-color: #eee; }
-        
-        /* 💡 마커 내부 이모지 스타일을 위한 CSS */
-        .burger-marker {
-            font
+        .place-category.icecream-theme { color: #00d2d3; background: #e0f7f7; }
