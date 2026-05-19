@@ -3,67 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>카카오맵 장소 검색 서비스</title>
+    <title>배부른 너의 모습이 좋아</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { width: 100%; height: 100%; font-family: 'Malgun Gothic', dotum, sans-serif; }
+        body, html { width: 100%; height: 100%; font-family: 'Malgun Gothic', dotum, sans-serif; background-color: #f5f6fa; }
         .container { display: flex; width: 100%; height: 100%; }
-        .sidebar { width: 350px; height: 100%; background-color: #f8f9fa; box-shadow: 2px 0 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; z-index: 10; }
         
+        /* 왼쪽 사이드바 영역 조정 */
+        .sidebar { width: 380px; height: 100%; background-color: #ffffff; box-shadow: 3px 0 10px rgba(0,0,0,0.08); display: flex; flex-direction: column; z-index: 10; }
+        
+        /* 💡 추가: 감성 타이틀 헤더 영역 */
+        .app-header {
+            padding: 20px 20px 10px 20px;
+            background-color: #ffffff;
+            border-bottom: 1px dashed #e9ecef;
+        }
+        .app-header h1 {
+            font-size: 1.4rem;
+            color: #2d3436;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .app-header p {
+            font-size: 11px;
+            color: #b2bec3;
+            margin-top: 2px;
+        }
+
+        /* 탭 메뉴 스타일 */
         .tab-menu {
             display: flex;
-            background-color: #e9ecef;
-            border-bottom: 1px solid #ced4da;
+            background-color: #f1f2f6;
+            padding: 5px 10px;
         }
         .tab-button {
             flex: 1;
-            padding: 15px 0;
+            padding: 12px 0;
             border: none;
             background: none;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
-            color: #495057;
+            color: #7f8c8d;
             cursor: pointer;
             transition: all 0.2s;
             text-align: center;
+            border-radius: 6px;
         }
         .tab-button.active.burger-theme {
-            background-color: #ffffff;
-            color: #ff9f43;
-            border-bottom: 3px solid #ff9f43;
+            background-color: #ff9f43;
+            color: #ffffff;
         }
         .tab-button.active.icecream-theme {
-            background-color: #ffffff;
-            color: #00d2d3;
-            border-bottom: 3px solid #00d2d3;
+            background-color: #00d2d3;
+            color: #ffffff;
         }
 
-        .search-box { padding: 20px; background-color: #ffffff; border-bottom: 1px solid #e9ecef; }
-        .search-box h2 { font-size: 1.2rem; margin-bottom: 10px; color: #ff9f43; transition: color 0.2s; }
+        /* 검색창 영역 */
+        .search-box { padding: 15px 20px; background-color: #ffffff; border-bottom: 1px solid #e9ecef; }
+        .search-box h2 { font-size: 1rem; margin-bottom: 8px; color: #ff9f43; transition: color 0.2s; }
         .search-box h2.icecream-theme { color: #00d2d3; }
         
         .search-form { display: flex; gap: 5px; }
-        .search-input { flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; }
+        .search-input { flex: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; }
+        .search-input:focus { border-color: #ff9f43; outline: none; }
         
-        .search-button { padding: 10px 15px; background-color: #ff9f43; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
+        .search-button { padding: 10px 15px; background-color: #ff9f43; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
         .search-button.icecream-theme { background-color: #00d2d3; }
 
-        .places-list { flex: 1; overflow-y: auto; padding: 10px; list-style: none; }
-        .place-item { padding: 15px; background-color: #ffffff; margin-bottom: 10px; border-radius: 6px; border: 1px solid #e9ecef; cursor: pointer; }
-        .place-item:hover { background-color: #fffaf0; }
+        /* 결과 리스트 내 스크롤 디자인 및 이미지 공간 확보 */
+        .places-list { flex: 1; overflow-y: auto; padding: 15px; list-style: none; background-color: #f8f9fa; }
+        .place-item { 
+            padding: 0; 
+            background-color: #ffffff; 
+            margin-bottom: 15px; 
+            border-radius: 10px; 
+            border: 1px solid #e9ecef; 
+            cursor: pointer; 
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .place-item:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
         
-        .place-name { font-weight: bold; color: #212529; margin-bottom: 5px; }
-        .place-address { font-size: 13px; color: #6c757d; margin-bottom: 5px; }
+        /* 💡 추가: 목록 내 실제 음식 사진을 대체할 배너 스타일 */
+        .place-image-box {
+            width: 100%;
+            height: 120px;
+            background-size: cover;
+            background-position: center;
+            background-color: #dfe6e9;
+        }
+        .place-info-padding { padding: 15px; }
+        
+        .place-name { font-size: 15px; font-weight: bold; color: #212529; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .place-address { font-size: 12px; color: #6c757d; margin-bottom: 8px; }
         
         .place-category { font-size: 11px; color: #ff9f43; background: #fff0e0; display: inline-block; padding: 2px 6px; border-radius: 10px; }
         .place-category.icecream-theme { color: #00d2d3; background: #e0f7f7; }
+        
+        /* 상세 정보 링크 버튼 */
+        .detail-link { font-size: 11px; color: #0984e3; text-decoration: none; font-weight: bold; }
 
         .map-container { flex: 1; height: 100%; background-color: #eee; } 
 
+        /* 마커 내부 이모지 스타일 */
         .emoji-marker {
-            font-size: 28px;
+            font-size: 32px;
             animation: bounce 0.3s ease-out;
             cursor: pointer;
+            filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.3));
         }
         @keyframes bounce {
             0% { transform: translateY(-10px); }
@@ -75,15 +123,20 @@
 
     <div class="container">
         <div class="sidebar">
+            <div class="app-header">
+                <h1>배부른 너의 모습이 좋아 💕</h1>
+                <p>🍔 동네 맛집부터 🍦 디저트 핫플까지 지도 가이드</p>
+            </div>
+
             <div class="tab-menu">
-                <button id="tabBurger" class="tab-button active burger-theme" onclick="switchTab('burger')">🍔 햄버거 맛집</button>
+                <button id="tabBurger" class="tab-button active burger-theme" onclick="switchTab('burger')">🍔 햄버거</button>
                 <button id="tabIcecream" class="tab-button" onclick="switchTab('icecream')">🍦 아이스크림</button>
             </div>
 
             <div class="search-box">
-                <h2 id="searchTitle">🍔 우리동네 햄버거 맛집</h2>
+                <h2 id="searchTitle">우리동네 맛있는 햄버거집</h2>
                 <form class="search-form" onsubmit="searchPlaces(); return false;">
-                    <input type="text" id="keyword" class="search-input" placeholder="장소 검색" value="햄버거">
+                    <input type="text" id="keyword" class="search-input" placeholder="지역 이름 입력 (예: 강남역, 홍대)">
                     <button type="submit" id="searchBtn" class="search-button">검색</button>
                 </form>
             </div>
@@ -95,160 +148,4 @@
     <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7d9a277cfc4d368da119fb50f73b42c5&libraries=services"></script>
     
     <script>
-        let map; 
-        let placesService;
-        let markers = []; 
-        let infoWindow;
-        let currentTab = 'burger'; 
-
-        // 💡 변경포인트 2: 주소에서 autoload를 뺐기 때문에 kakao.maps.load 함수 없이 바로 initMap()을 실행합니다.
-        initMap();
-
-        function initMap() {
-            const mapContainer = document.getElementById('map');
-            const defaultPosition = new kakao.maps.LatLng(37.5559, 126.9723); // 서울역 위치
-            
-            const mapOptions = {
-                center: defaultPosition,
-                level: 5
-            };
-
-            map = new kakao.maps.Map(mapContainer, mapOptions);
-            placesService = new kakao.maps.services.Places();
-            infoWindow = new kakao.maps.InfoWindow({ zIndex: 1 });
-
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    const currentPosition = new kakao.maps.LatLng(lat, lon);
-                    
-                    map.setCenter(currentPosition);
-                    new kakao.maps.Marker({ map: map, position: currentPosition });
-                    
-                    searchPlaces();
-                }, function(error) {
-                    console.log("위치 권한을 허용하지 않아 기본 위치로 표시합니다.");
-                    searchPlaces(); 
-                });
-            } else {
-                searchPlaces();
-            }
-        }
-
-        function switchTab(tabName) {
-            if (currentTab === tabName) return; 
-            currentTab = tabName;
-
-            const tabBurger = document.getElementById('tabBurger');
-            const tabIcecream = document.getElementById('tabIcecream');
-            const searchTitle = document.getElementById('searchTitle');
-            const keywordInput = document.getElementById('keyword');
-            const searchBtn = document.getElementById('searchBtn');
-
-            document.getElementById('placesList').innerHTML = '';
-            removeMarkers();
-
-            if (currentTab === 'burger') {
-                tabBurger.className = 'tab-button active burger-theme';
-                tabIcecream.className = 'tab-button';
-                
-                searchTitle.className = '';
-                searchTitle.innerText = '🍔 우리동네 햄버거 맛집';
-                searchBtn.className = 'search-button';
-                keywordInput.value = '햄버格';
-                keywordInput.value = '햄버거';
-            } else {
-                tabBurger.className = 'tab-button';
-                tabIcecream.className = 'tab-button active icecream-theme';
-                
-                searchTitle.className = 'icecream-theme';
-                searchTitle.innerText = '🍦 달콤한 아이스크림 맛집';
-                searchBtn.className = 'search-button icecream-theme';
-                keywordInput.value = '아이스크림';
-            }
-
-            searchPlaces();
-        }
-
-        function searchPlaces() {
-            const keyword = document.getElementById('keyword').value;
-            if (!keyword.trim()) { alert('키워드를 입력해주세요!'); return; }
-            
-            document.getElementById('placesList').innerHTML = '';
-            removeMarkers();
-
-            placesService.keywordSearch(keyword, placesSearchCB);
-        }
-
-        function placesSearchCB(data, status) {
-            if (status === kakao.maps.services.Status.OK) { displayPlaces(data); } 
-            else if (status === kakao.maps.services.Status.ZERO_RESULT) { alert('검색 결과가 없습니다.'); }
-        }
-
-        function displayPlaces(places) {
-            const listEl = document.getElementById('placesList');
-            const bounds = new kakao.maps.LatLngBounds();
-            const markerEmoji = (currentTab === 'burger') ? '🍔' : '🍦';
-
-            for (let i = 0; i < places.length; i++) {
-                const placePosition = new kakao.maps.LatLng(places[i].y, places[i].x);
-                
-                const markerContent = document.createElement('div');
-                markerContent.className = 'emoji-marker';
-                markerContent.innerHTML = markerEmoji;
-
-                const customMarker = new kakao.maps.CustomOverlay({
-                    position: placePosition,
-                    content: markerContent,
-                    yAnchor: 0.9 
-                });
-                
-                customMarker.setMap(map);
-                markers.push(customMarker);
-
-                const itemEl = document.createElement('li');
-                itemEl.className = 'place-item';
-                
-                const categoryArray = places[i].category_name.split(' > ');
-                const categoryMenu = categoryArray[categoryArray.length - 1] || "매장";
-                const themeClass = (currentTab === 'icecream') ? 'icecream-theme' : '';
-
-                itemEl.innerHTML = `
-                    <div class="place-name">${places[i].place_name}</div>
-                    <div class="place-address">${places[i].road_address_name || places[i].address_name}</div>
-                    <div class="place-category ${themeClass}">${categoryMenu}</div>
-                `;
-
-                function showPopup() {
-                    map.setCenter(placePosition);
-                    const highlightColor = (currentTab === 'burger') ? '#ff9f43' : '#00d2d3';
-                    
-                    const popupContent = `
-                        <div style="padding:10px; font-size:12px; min-width:200px; line-height: 1.5;">
-                            <strong style="color:${highlightColor};">${places[i].place_name}</strong><br>
-                            <span style="color:#6c757d;">${places[i].road_address_name || places[i].address_name}</span>
-                        </div>
-                    `;
-                    
-                    infoWindow.setContent(popupContent);
-                    infoWindow.open(map, customMarker);
-                }
-
-                itemEl.onclick = showPopup;
-                markerContent.onclick = showPopup;
-
-                listEl.appendChild(itemEl);
-                bounds.extend(placePosition);
-            }
-            map.setBounds(bounds);
-        }
-
-        function removeMarkers() {
-            for (let i = 0; i < markers.length; i++) { markers[i].setMap(null); }
-            markers = [];
-            infoWindow.close(); 
-        }
-    </script>
-</body>
-</html>
+        let map
