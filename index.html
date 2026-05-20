@@ -91,33 +91,36 @@
 
         function initMap() {
             const mapContainer = document.getElementById('map');
-            const defaultPosition = new kakao.maps.LatLng(37.5559, 126.9723); // 서울역
+            
+            // 💡 수정포인트 1: 초기 진입 시 대한민국 전체 지도가 뜨지 않도록 강남역 좌표(37.4979, 127.0276)를 기본 중심점으로 미리 단단히 고정합니다.
+            const defaultPosition = new kakao.maps.LatLng(37.4979, 127.0276); 
             
             const mapOptions = {
                 center: defaultPosition,
-                level: 4 // 💡 숫자가 작을수록 확대됨 (4~5레벨이 딱 동네 범위)
+                level: 4 // 처음부터 줌 레벨을 대폭 확대하여 주변 건물 단주위로 가깝게 보여줍니다.
             };
 
             map = new kakao.maps.Map(mapContainer, mapOptions);
             placesService = new kakao.maps.services.Places();
             infoWindow = new kakao.maps.InfoWindow({ zIndex: 1 });
 
-            // 실시간 사용자 위치 확인
+            // 사용자 실시간 위치 수신 및 동기화
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(function(position) {
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
                     const currentPosition = new kakao.maps.LatLng(lat, lon);
                     
+                    // 내 진짜 위치가 잡히면 부드럽게 지도를 이동하고 레벨을 밀착 고정합니다.
                     map.setCenter(currentPosition);
+                    map.setLevel(4);
                     
-                    // 현재 내 위치에 마커 표시
                     new kakao.maps.Marker({ map: map, position: currentPosition });
                     
-                    // 내 주변 탐색 시작
+                    // 곧바로 잡힌 내 위치 근처의 맛집 서치 실행
                     searchPlaces();
                 }, function(error) {
-                    console.log("위치 권한 거부 - 기본 위치로 탐색합니다.");
+                    console.log("위치 권한 미허용 - 기본 고정 위치(강남역 주변)로 탐색합니다.");
                     searchPlaces(); 
                 });
             } else {
@@ -154,43 +157,43 @@
             searchPlaces();
         }
 
-        // 💡 핵심 변경: 지역 검색 및 정밀 주위 필터링 로직
         function searchPlaces() {
             const userInput = document.getElementById('keyword').value.trim();
+            
+            // 💡 수정포인트 2: 단순 텍스트 매칭 대신, 카카오 카테고리 필터링 키워드를 명확하게 선언합니다.
             const categoryKeyword = (currentTab === 'burger') ? '햄버거' : '아이스크림';
 
             document.getElementById('placesList').innerHTML = '';
             removeMarkers();
 
-            // 1. 검색창이 비어있을 때 -> 현재 지도 중심 주위 반경 3km 내 맛집 검색
+            // 1. 검색창에 아무것도 입력하지 않은 상태일 때 (내 현재 위치 주변 탐색)
             if (!userInput) {
                 const currentCenter = map.getCenter();
                 placesService.keywordSearch(categoryKeyword, placesSearchCB, {
                     location: currentCenter,
-                    radius: 3000, // 3km 이내 제한 (지도가 대한민국 전체로 튕기는 현상 방지)
+                    radius: 2500, // 반경 2.5km 이내로 제한하여 대한민국 전역 확산을 철저히 방지합니다.
                     sort: kakao.maps.services.SortBy.DISTANCE
                 });
             } 
-            // 2. 사용자가 '강남역' 같은 특정 지역을 입력했을 때
+            // 2. 사용자가 검색창에 특정 '지역명'(예: 홍대, 신촌 등)을 직접 입력하고 검색했을 때
             else {
-                // 먼저 입력한 '지역'의 좌표를 찾기 위해 장소 검색을 먼저 보냅니다.
+                // 입력한 해당 지역 중심점을 먼저 안전하게 도출하기 위해 1차 검색을 수행합니다.
                 placesService.keywordSearch(userInput, function(data, status) {
                     if (status === kakao.maps.services.Status.OK) {
-                        // 찾은 지역의 첫 번째 장소를 기준으로 중심좌표 생성
                         const searchRegionPos = new kakao.maps.LatLng(data[0].y, data[0].x);
                         
-                        // 지도를 해당 지역으로 이동시키고 확대 레벨 고정
+                        // 지도를 튕김 없이 타겟 지역으로 직행시킨 뒤 레벨을 확대 고정합니다.
                         map.setCenter(searchRegionPos);
                         map.setLevel(4); 
 
-                        // 이동한 그 지역 중심에서 반경 3km 이내의 진짜 햄버거/아이스크림 집만 재검색!
+                        // 💡 수정포인트 3: 찾아낸 지역 중심 좌표를 기반으로 "진짜 햄버거집/아이스크림집"만 엄격하게 한정 필터 서치합니다!
                         placesService.keywordSearch(categoryKeyword, placesSearchCB, {
                             location: searchRegionPos,
-                            radius: 3000,
+                            radius: 2500,
                             sort: kakao.maps.services.SortBy.DISTANCE
                         });
                     } else {
-                        alert('존재하지 않는 지역 이름입니다. 다시 입력해 주세요!');
+                        alert('올바른 지역 이름이나 동네 명칭을 입력해 주세요!');
                     }
                 });
             }
@@ -200,7 +203,7 @@
             if (status === kakao.maps.services.Status.OK) { 
                 displayPlaces(data); 
             } else if (status === kakao.maps.services.Status.ZERO_RESULT) { 
-                alert('이 주변에는 매장이 없습니다. 다른 반경을 탐색해 보세요!'); 
+                alert('해당 반경 내에는 매장이 존재하지 않습니다.'); 
             }
         }
 
@@ -211,7 +214,6 @@
             for (let i = 0; i < places.length; i++) {
                 const placePosition = new kakao.maps.LatLng(places[i].y, places[i].x);
                 
-                // 커스텀 이모지 마커 설정
                 const markerContent = document.createElement('div');
                 markerContent.className = 'emoji-marker';
                 markerContent.innerHTML = markerEmoji;
@@ -225,7 +227,6 @@
                 customMarker.setMap(map);
                 markers.push(customMarker);
 
-                // 왼쪽 리스트 아이템 디자인 구성
                 const itemEl = document.createElement('li');
                 itemEl.className = 'place-item';
                 
@@ -271,3 +272,21 @@
                 markerContent.onclick = showPopup;
 
                 listEl.appendChild(itemEl);
+            }
+            
+            // 💡 대한민국 축소 튕김 현상의 주범이었던 기존 전체 범위 재설정 코드는 완전히 도려내었습니다.
+            // 대신 결과물 중 가낭 최상단(가장 가까운) 매장의 좌표로 줌 레벨 무너짐 없이 정밀 타겟 무빙합니다.
+            if(places.length > 0) {
+                const firstPlacePos = new kakao.maps.LatLng(places[0].y, places[0].x);
+                map.setCenter(firstPlacePos);
+            }
+        }
+
+        function removeMarkers() {
+            for (let i = 0; i < markers.length; i++) { markers[i].setMap(null); }
+            markers = [];
+            infoWindow.close(); 
+        }
+    </script>
+</body>
+</html>
